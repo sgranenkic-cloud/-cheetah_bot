@@ -14,6 +14,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+print("BOT_TOKEN:", repr(BOT_TOKEN)) 
 BOT_TOKEN = os.getenv("BOT_TOKEN", "").strip()
 if not BOT_TOKEN:
     raise RuntimeError("Missing BOT_TOKEN env var")
