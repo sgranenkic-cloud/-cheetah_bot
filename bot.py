@@ -10,47 +10,13 @@ from aiogram.types import (
     InlineKeyboardMarkup,
     InlineKeyboardButton,
 )
-from dotenv import load_dotenv
 
-load_dotenv()
+BOT_TOKEN = os.getenv("BOT_TOKEN")
 
+if not BOT_TOKEN:
+    raise RuntimeError("BOT_TOKEN not found in environment variables")
 
-def get_bot_token() -> str:
-    raw_token = os.getenv("BOT_TOKEN", "")
-
-    # Безопасная диагностика для логов Railway
-    print("BOT_TOKEN loaded:", bool(raw_token))
-    print("BOT_TOKEN length:", len(raw_token))
-    print("BOT_TOKEN has colon:", ":" in raw_token)
-
-    token = raw_token.strip()
-
-    # Убираем случайные кавычки, если токен вставили как "123:ABC" или '123:ABC'
-    if (token.startswith('"') and token.endswith('"')) or (
-        token.startswith("'") and token.endswith("'")
-    ):
-        token = token[1:-1].strip()
-
-    if not token:
-        raise RuntimeError("Missing BOT_TOKEN env var")
-
-    if ":" not in token:
-        raise RuntimeError("BOT_TOKEN format looks wrong: missing ':'")
-
-    left, right = token.split(":", 1)
-
-    if not left.isdigit():
-        raise RuntimeError("BOT_TOKEN format looks wrong: part before ':' must be digits")
-
-    if not right:
-        raise RuntimeError("BOT_TOKEN format looks wrong: empty part after ':'")
-
-    return token
-
-
-BOT_TOKEN = get_bot_token()
-
-ADMIN_USERNAME = "grondkind"  # without @
+ADMIN_USERNAME = "grondkind"
 FORM_URL = "https://forms.yandex.ru/u/6705fa6c505690f108fe691d"
 
 WELCOME_TEXT = (
@@ -103,7 +69,7 @@ BTN_PRICE = "Какая стоимость занятий"
 router = Router()
 
 
-def main_menu_kb() -> ReplyKeyboardMarkup:
+def main_menu():
     return ReplyKeyboardMarkup(
         keyboard=[
             [KeyboardButton(text=BTN_BECOME)],
@@ -112,63 +78,53 @@ def main_menu_kb() -> ReplyKeyboardMarkup:
             [KeyboardButton(text=BTN_PRICE)],
         ],
         resize_keyboard=True,
-        input_field_placeholder="Выбери пункт в меню",
     )
 
 
-def become_inline_kb() -> InlineKeyboardMarkup:
+def become_buttons():
     return InlineKeyboardMarkup(
         inline_keyboard=[
-            [
-                InlineKeyboardButton(
-                    text="Написать тренеру",
-                    url=f"https://t.me/{ADMIN_USERNAME}",
-                )
-            ],
-            [
-                InlineKeyboardButton(
-                    text="Заполнить форму",
-                    url=FORM_URL,
-                )
-            ],
+            [InlineKeyboardButton(text="Написать тренеру", url=f"https://t.me/{ADMIN_USERNAME}")],
+            [InlineKeyboardButton(text="Заполнить форму", url=FORM_URL)],
         ]
     )
 
 
 @router.message(CommandStart())
-async def cmd_start(message: Message) -> None:
-    await message.answer(WELCOME_TEXT, reply_markup=main_menu_kb())
+async def start(message: Message):
+    await message.answer(WELCOME_TEXT, reply_markup=main_menu())
 
 
 @router.message(F.text == BTN_BECOME)
-async def become_cheetah(message: Message) -> None:
-    await message.answer(BECOME_CHEETAH_TEXT, reply_markup=become_inline_kb())
+async def become(message: Message):
+    await message.answer(BECOME_CHEETAH_TEXT, reply_markup=become_buttons())
 
 
 @router.message(F.text == BTN_START)
-async def begin_running(message: Message) -> None:
-    await message.answer(BEGIN_RUNNING_TEXT, reply_markup=main_menu_kb())
+async def start_running(message: Message):
+    await message.answer(BEGIN_RUNNING_TEXT, reply_markup=main_menu())
 
 
 @router.message(F.text == BTN_WHERE)
-async def where_trainings(message: Message) -> None:
-    await message.answer(WHERE_TRAININGS_TEXT, reply_markup=main_menu_kb())
+async def where(message: Message):
+    await message.answer(WHERE_TRAININGS_TEXT, reply_markup=main_menu())
 
 
 @router.message(F.text == BTN_PRICE)
-async def pricing(message: Message) -> None:
-    await message.answer(PRICING_TEXT, reply_markup=main_menu_kb())
+async def price(message: Message):
+    await message.answer(PRICING_TEXT, reply_markup=main_menu())
 
 
 @router.message()
-async def fallback(message: Message) -> None:
-    await message.answer("Выбери пункт в меню 👇", reply_markup=main_menu_kb())
+async def fallback(message: Message):
+    await message.answer("Выбери пункт в меню 👇", reply_markup=main_menu())
 
 
-async def main() -> None:
+async def main():
     bot = Bot(token=BOT_TOKEN)
     dp = Dispatcher()
     dp.include_router(router)
+
     await dp.start_polling(bot)
 
 
