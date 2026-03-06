@@ -14,12 +14,43 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-print("BOT_TOKEN:", repr(BOT_TOKEN)) 
-BOT_TOKEN = os.getenv("BOT_TOKEN", "").strip()
-if not BOT_TOKEN:
-    raise RuntimeError("Missing BOT_TOKEN env var")
 
-ADMIN_USERNAME = "grondkind"  # without '@'
+def get_bot_token() -> str:
+    raw_token = os.getenv("BOT_TOKEN", "")
+
+    # Безопасная диагностика для логов Railway
+    print("BOT_TOKEN loaded:", bool(raw_token))
+    print("BOT_TOKEN length:", len(raw_token))
+    print("BOT_TOKEN has colon:", ":" in raw_token)
+
+    token = raw_token.strip()
+
+    # Убираем случайные кавычки, если токен вставили как "123:ABC" или '123:ABC'
+    if (token.startswith('"') and token.endswith('"')) or (
+        token.startswith("'") and token.endswith("'")
+    ):
+        token = token[1:-1].strip()
+
+    if not token:
+        raise RuntimeError("Missing BOT_TOKEN env var")
+
+    if ":" not in token:
+        raise RuntimeError("BOT_TOKEN format looks wrong: missing ':'")
+
+    left, right = token.split(":", 1)
+
+    if not left.isdigit():
+        raise RuntimeError("BOT_TOKEN format looks wrong: part before ':' must be digits")
+
+    if not right:
+        raise RuntimeError("BOT_TOKEN format looks wrong: empty part after ':'")
+
+    return token
+
+
+BOT_TOKEN = get_bot_token()
+
+ADMIN_USERNAME = "grondkind"  # without @
 FORM_URL = "https://forms.yandex.ru/u/6705fa6c505690f108fe691d"
 
 WELCOME_TEXT = (
@@ -31,7 +62,7 @@ WELCOME_TEXT = (
     "▫️ Найти, где проходят наши тренировки.\n"
     "▫️ Посмотреть тарифы и формат занятий.\n\n"
     "Мы тренируем:\n"
-    "🏃‍♀️ От первых  километров до марафона и дальше.\n"
+    "🏃‍♀️ От первых километров до марафона и дальше.\n"
     "💬 В Новосибирске и онлайн.\n"
     "📅 По расписанию и в удобное тебе время.\n\n"
     "Жмяк на кнопку в меню и начинаем!"
@@ -86,11 +117,20 @@ def main_menu_kb() -> ReplyKeyboardMarkup:
 
 
 def become_inline_kb() -> InlineKeyboardMarkup:
-    # Bot cannot message @grondkind directly; we provide a deep-link to open chat.
     return InlineKeyboardMarkup(
         inline_keyboard=[
-            [InlineKeyboardButton(text="Написать тренеру", url=f"https://t.me/{ADMIN_USERNAME}")],
-            [InlineKeyboardButton(text="Заполнить форму", url=FORM_URL)],
+            [
+                InlineKeyboardButton(
+                    text="Написать тренеру",
+                    url=f"https://t.me/{ADMIN_USERNAME}",
+                )
+            ],
+            [
+                InlineKeyboardButton(
+                    text="Заполнить форму",
+                    url=FORM_URL,
+                )
+            ],
         ]
     )
 
