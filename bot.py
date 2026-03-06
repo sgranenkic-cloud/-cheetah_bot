@@ -78,6 +78,7 @@ def main_menu():
             [KeyboardButton(text=BTN_PRICE)],
         ],
         resize_keyboard=True,
+        input_field_placeholder="Выбери пункт в меню",
     )
 
 
@@ -124,7 +125,6 @@ async def main():
     bot = Bot(token=BOT_TOKEN)
     dp = Dispatcher()
     dp.include_router(router)
-
     await dp.start_polling(bot)
 
 
